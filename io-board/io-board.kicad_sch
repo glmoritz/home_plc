@@ -100,6 +100,96 @@
 		)
 	)
 	(sheet
+		(at 76.2 76.2)
+		(size 40.64 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "8b8ef9b9-8a15-56e1-8050-fde638f1f1a5")
+		(property "Sheetname" "Analog inputs and output"
+			(at 76.2 75.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "analog.kicad_sch"
+			(at 76.2 97.1 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "io-board"
+				(path "/043b44e4-a81e-567f-8e7b-e33f7a8d3b8c"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 25.4 76.2)
+		(size 40.64 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "96716ba0-2bd5-5b29-852e-f6ec8cb08269")
+		(property "Sheetname" "Output drivers"
+			(at 25.4 75.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "output_drivers.kicad_sch"
+			(at 25.4 97.1 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "io-board"
+				(path "/043b44e4-a81e-567f-8e7b-e33f7a8d3b8c"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 127 38.1)
 		(size 40.64 20.32)
 		(exclude_from_sim no)
@@ -159,7 +249,7 @@
 			(color 0 0 0 0)
 		)
 		(uuid "f8d17698-31d1-5a70-9306-a1f18932ea5d")
-		(property "Sheetname" "Digital outputs and watchdog"
+		(property "Sheetname" "Output latch and watchdog"
 			(at 177.8 37.4 0)
 			(show_name no)
 			(do_not_autoplace no)

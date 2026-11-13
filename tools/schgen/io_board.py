@@ -247,22 +247,18 @@ C(s, (109.22, YD), "100n", "DI_VDD", "GND_F")
 C(s, (124.46, YD), "100n", "+3V3_F", "GND_F")
 
 # --------------------------------------------------------- digital outputs
-s = prj.sheet("digital_out.kicad_sch", "Digital outputs and watchdog")
+N_DO = 8
+s = prj.sheet("digital_out.kicad_sch", "Output latch and watchdog")
 s.text("Output latch. Outputs are high-Z until the watchdog sees the heartbeat (OUT_EN high).", (25.4, Y1 - 30.48))
 s.part("74xx:74HC595", "U", (55.88, Y1), {
     "SER": "F_MOSI", "SRCLK": "F_SCK", "RCLK": "CS_DO_N", "~{SRCLR}": "+3V3_F", "~{OE}": "DO_OE_N",
-    "QA": "DO_Q1", "QB": "DO_Q2", "QC": "DO_Q3", "QD": "DO_Q4", "QE": "NC", "QF": "NC", "QG": "NC", "QH": "NC",
-    "QH'": "NC", "VCC": "+3V3_F", "GND": "GND_F"},
+    "QA": "DO_Q1", "QB": "DO_Q2", "QC": "DO_Q3", "QD": "DO_Q4", "QE": "DO_Q5", "QF": "DO_Q6", "QG": "DO_Q7",
+    "QH": "DO_Q8", "QH'": "NC", "VCC": "+3V3_F", "GND": "GND_F"},
     value="74HC595", footprint="Package_SO:SOIC-16_3.9x9.9mm_P1.27mm")
 C(s, (91.44, Y1), "100n", "+3V3_F", "GND_F")
 s.part("74xGxx:74LVC1G04", "U", (129.54, Y1), {"1": "NC", "2": "OUT_EN", "4": "DO_OE_N", "GND": "GND_F", "VCC": "+3V3_F"},
        value="74LVC1G04", footprint="Package_TO_SOT_SMD:SOT-23-5")
 C(s, (160.02, Y1), "100n", "+3V3_F", "GND_F")
-for i in range(1, 5):
-    x = 185.42 + (i - 1) * 30.48
-    R(s, (x, Y1), "1k", "DO_Q%d" % i, "DO_LED%d" % i)
-    led(s, (x + 12.7, Y1), "DO_LED%d" % i, value="yellow")
-    R(s, (231.14 + (i - 1) * 15.24, Y3), "47k", "DO_Q%d" % i, "GND_F")
 
 s.text("Heartbeat watchdog. Only edges on F_HEARTBEAT retrigger it, so a line stuck high or low times out "
        "(about 0.1 s) and OUT_EN goes low.", (25.4, Y2 - 30.48))
@@ -281,29 +277,92 @@ C(s, (223.52, Y2), "100n", "+3V3_F", "GND_F")
 R(s, (243.84, Y2), "1k", "OUT_EN", "WD_LED")
 led(s, (259.08, Y2), "WD_LED", value="green OUT EN")
 
-s.text("Output driver and terminals. 2L+ is the load supply, 2M its return (GND_F).", (25.4, Y3 - 35.56))
-s.part("Connector_Generic:Conn_01x06", "J", (38.1, Y3),
-       {"1": "DO1", "2": "DO2", "3": "DO3", "4": "DO4", "5": "24V_DO_IN", "6": "GND_F"},
-       value="DO1-4, 2L+, 2M", footprint="")
-s.part("Transistor_FET:Q_PMOS_GDS", "Q", (66.04, Y3), {"G": "DO_RP_GATE", "D": "24V_DO_IN", "S": "+24V_DO"},
-       value="PMOS 60V TBD", footprint="Package_TO_SOT_SMD:TO-252-2")
-two_pin(s, "Device:D_Zener", "D", (88.9, Y3), "+24V_DO", "DO_RP_GATE", "15V", "Diode_SMD:D_SOD-123", r=90)
-R(s, (106.68, Y3), "100k", "DO_RP_GATE", "GND_F")
-tvs(s, (121.92, Y3), "+24V_DO")
-two_pin(s, "Device:C_Polarized", "C", (139.7, Y3), "+24V_DO", "GND_F", "47u 50V",
-        "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm")
-C(s, (154.94, Y3), "100n 50V", "+24V_DO", "GND_F")
-nets = {"VCC": "+24V_DO", "GND": "GND_F"}
-for i in range(1, 5):
-    nets["IN%d" % i] = "DO_Q%d" % i
-    nets["~{STAT%d}" % i] = "FAULT_N"
-    nets["OUT%d" % i] = "DO%d" % i
-    x = 297.18 + (i - 1) * 27.94
-    tvs(s, (x, Y3), "DO%d" % i)
-    C(s, (x + 15.24, Y3), "10n 50V", "DO%d" % i, "GND_F")
-s.part("home_plc:IPS4140HQ", "U", (193.04, Y3 + 5.08), nets)
-s.flag("+24V_DO", (66.04, Y3 + 30.48))
-s.flag("24V_DO_IN", (38.1, Y3 + 30.48))
+s.text("Commanded-state LEDs", (25.4, Y3 - 30.48))
+for i in range(1, N_DO + 1):
+    x = 33.02 + (i - 1) * 30.48
+    R(s, (x, Y3), "1k", "DO_Q%d" % i, "DO_LED%d" % i)
+    led(s, (x + 12.7, Y3), "DO_LED%d" % i, value="yellow")
+
+# ---------------------------------------------------------- output drivers
+s = prj.sheet("output_drivers.kicad_sch", "Output drivers")
+s.text("8 x 24 V high-side outputs, 0.6 A each. 2L+ is the load supply, 2M its return (GND_F).", (25.4, Y1 - 35.56))
+s.part("Connector_Generic:Conn_01x10", "J", (38.1, Y1),
+       dict({str(i): "DO%d" % i for i in range(1, 9)}, **{"9": "24V_DO_IN", "10": "GND_F"}),
+       value="DO1-8, 2L+, 2M", footprint="")
+s.part("Transistor_FET:Q_PMOS_GDS", "Q", (71.12, Y1), {"G": "DO_RP_GATE", "D": "24V_DO_IN", "S": "+24V_DO"},
+       value="PMOS 60V 10A TBD", footprint="Package_TO_SOT_SMD:TO-252-2")
+two_pin(s, "Device:D_Zener", "D", (96.52, Y1), "+24V_DO", "DO_RP_GATE", "15V", "Diode_SMD:D_SOD-123", r=90)
+R(s, (114.3, Y1), "100k", "DO_RP_GATE", "GND_F")
+tvs(s, (129.54, Y1), "+24V_DO")
+two_pin(s, "Device:C_Polarized", "C", (149.86, Y1), "+24V_DO", "GND_F", "100u 50V",
+        "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+C(s, (165.1, Y1), "100n 50V", "+24V_DO", "GND_F")
+C(s, (180.34, Y1), "100n 50V", "+24V_DO", "GND_F")
+s.flag("+24V_DO", (203.2, Y1 - 5.08))
+s.flag("24V_DO_IN", (203.2, Y1 + 5.08))
+for chip, y in ((0, Y2), (1, Y3)):
+    nets = {"VCC": "+24V_DO", "GND": "GND_F"}
+    for k in range(1, 5):
+        i = chip * 4 + k
+        nets["IN%d" % k] = "DO_Q%d" % i
+        nets["~{STAT%d}" % k] = "FAULT_N"
+        nets["OUT%d" % k] = "DO%d" % i
+        R(s, (104.14 + (k - 1) * 15.24, y), "47k", "DO_Q%d" % i, "GND_F")
+        x = 175.26 + (k - 1) * 27.94
+        tvs(s, (x, y), "DO%d" % i)
+        C(s, (x + 15.24, y), "10n 50V", "DO%d" % i, "GND_F")
+    s.part("home_plc:IPS4140HQ", "U", (60.96, y + 5.08), nets)
+
+# ------------------------------------------------------------------ analog
+R1206 = "Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder"
+s = prj.sheet("analog.kicad_sch", "Analog inputs and output")
+s.text("2 x 4-20 mA inputs: 100R shunt to GND_F, so 20 mA = 2.0 V at the ADC. "
+       "Terminals: AI1, M, AI2, M, AO, M.", (25.4, Y1 - 30.48))
+s.part("Connector_Generic:Conn_01x06", "J", (38.1, Y1),
+       {"1": "AI1", "2": "GND_F", "3": "AI2", "4": "GND_F", "5": "AO", "6": "GND_F"},
+       value="AI1, M, AI2, M, AO, M", footprint="")
+for n in (1, 2):
+    x = 66.04 + (n - 1) * 121.92
+    ai, sh, adc = "AI%d" % n, "AI%d_SH" % n, "ADC_CH%d" % n
+    two_pin(s, "Device:Polyfuse", "F", (x, Y1), ai, sh, "PTC 50mA", F1812)
+    two_pin(s, "Device:R", "R", (x + 15.24, Y1), sh, "GND_F", "100R 0.1%", R1206)
+    tvs(s, (x + 30.48, Y1), ai)
+    R(s, (x + 50.8, Y1), "4k7", sh, adc)
+    C(s, (x + 66.04, Y1), "100n", adc, "GND_F")
+    s.part("Diode:BAT54S", "D", (x + 88.9, Y1), {"A": "GND_F", "K": "+3V3_F", "COM": adc})
+
+s.text("ADC, 2.5 V reference and DAC", (25.4, Y2 - 30.48))
+s.part("Analog_ADC:ADS1118IDGS", "U", (60.96, Y2), {
+    "SCLK": "F_SCK", "~{CS}": "CS_ADC_N", "DIN": "F_MOSI", "DOUT/~{DRDY}": "F_MISO",
+    "AIN0": "ADC_CH1", "AIN1": "ADC_CH2", "AIN2": "GND_F", "AIN3": "GND_F", "VDD": "+3V3_F", "GND": "GND_F"},
+    footprint="Package_SO:MSOP-10_3x3mm_P0.5mm")
+C(s, (99.06, Y2), "100n", "+3V3_F", "GND_F")
+R(s, (119.38, Y2), "680R", "+3V3_F", "VREF_2V5")
+s.part("Reference_Voltage:LM4040DBZ-2.5", "U", (142.24, Y2), {"K": "VREF_2V5", "A": "GND_F", "NC": "NC"})
+C(s, (165.1, Y2), "100n", "VREF_2V5", "GND_F")
+s.part("Analog_DAC:MCP4921-ESN", "U", (213.36, Y2), {
+    "VDD": "+3V3_F", "~{CS}": "CS_DAC_N", "SCK": "F_SCK", "SDI": "F_MOSI", "~{LDAC}": "GND_F",
+    "VrefA": "VREF_2V5", "AVSS": "GND_F", "VoutA": "DAC_OUT"},
+    footprint="Package_SO:SOIC-8_3.9x4.9mm_P1.27mm")
+C(s, (251.46, Y2), "100n", "+3V3_F", "GND_F")
+R(s, (266.7, Y2), "1k", "DAC_OUT", "AO_VIN")
+
+s.text("4-20 mA output: Iout = 10 x Vin / 1k, so 2.0 V = 20 mA. OD is high (output off) while the watchdog "
+       "has no heartbeat.", (25.4, Y3 - 30.48))
+R(s, (33.02, Y3), "10R", "+24V_F", "AO_VSP")
+C(s, (48.26, Y3), "100n 50V", "AO_VSP", "GND_F")
+s.flag("AO_VSP", (33.02, Y3 + 25.4))
+s.part("Interface_CurrentLoop:XTR111AxDGQ", "U", (93.98, Y3), {
+    "VSP": "AO_VSP", "IS": "AO_IS", "VG": "AO_VG", "REGS": "AO_REG", "REGF": "AO_REG", "VIN": "AO_VIN",
+    "SET": "AO_SET", "~{EF}": "NC", "OD": "DO_OE_N", "GND": "GND_F"},
+    value="XTR111AIDGQ")
+C(s, (132.08, Y3), "470n", "AO_REG", "GND_F")
+two_pin(s, "Device:R", "R", (147.32, Y3), "AO_SET", "GND_F", "1k 0.1%", R0805)
+s.part("Transistor_FET:Q_PMOS_GDS", "Q", (175.26, Y3), {"G": "AO_VG", "S": "AO_IS", "D": "AO_DRAIN"},
+       value="PMOS 60V TBD", footprint="Package_TO_SOT_SMD:SOT-223-3_TabPin2")
+two_pin(s, "Device:D_Schottky", "D", (203.2, Y3), "AO", "AO_DRAIN", "SS16", "Diode_SMD:D_SMA_Handsoldering", r=90)
+tvs(s, (223.52, Y3), "AO")
+C(s, (243.84, Y3), "10n 50V", "AO", "GND_F")
 
 out = os.path.join(ROOT, "io-board")
 prj.write(out, "home_plc IO-24", "0.1")
