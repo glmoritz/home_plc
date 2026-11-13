@@ -17,6 +17,7 @@ GPIO use on both CPU boards: [docs/pin-budget.md](docs/pin-budget.md).
 ## Other folders
 
 - `lib/`: symbols and footprints shared by the three projects
+- `tools/schgen/`: the I/O board schematic is generated from `io_board.py`; `build.sh` regenerates it, converts it to KiCad 10 format and checks every pin against the description. Edit the script, not the schematic, until this note is removed
 - `case/`: enclosure
 - `docs/`: specs, the LCSC sourcing brief, datasheets
 

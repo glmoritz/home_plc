@@ -11,7 +11,7 @@ Sources:
 
 | Group | Signals | Count |
 |---|---|---:|
-| Stacking connector | IO_SCK, IO_MOSI, IO_MISO, IO_A0, IO_A1, IO_A2, IO_EN, IO_HEARTBEAT, IO_FAULT, RS485_TX, RS485_RX, RS485_DE | 12 |
+| Stacking connector | IO_SCK, IO_MOSI, IO_MISO, IO_A0, IO_A1, IO_A2, IO_CS_N, IO_HEARTBEAT, IO_FAULT, RS485_TX, RS485_RX, RS485_DE | 12 |
 | I2C | SDA, SCL: RTC and front-panel expander | 2 |
 | GPS (CPU-P4 only) | GPS_TX, GPS_RX, GPS_PPS | 3 |
 | Wi-Fi coprocessor link (CPU-P4 only) | SDIO CLK, CMD, D0–D3, C6 reset | 7 |

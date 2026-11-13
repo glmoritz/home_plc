@@ -33,8 +33,9 @@ For remote I/O at a distance, use the RS-485 port (Modbus RTU) instead.
 
 - **+24V_EXP**: field 24 V through its own resettable fuse, for module logic only. Budget to be set; ribbon conductors carry about 1 A each. A module that switches loads takes its load supply from its own terminals.
 - **Logic level**: 3.3 V. Each module makes its own 3.3 V from +24V_EXP.
-- **EXP_SCK, EXP_MOSI**: buffered copies of the field-side bus, so a fault on the ribbon cannot stall the base I/O.
-- **CS_A–CS_D**: active low, idle high with pull-ups on the I/O board.
+- **EXP_SCK, EXP_MOSI**: buffered copies of the field-side bus, with 33 Ω in series, so a fault on the ribbon cannot stall the base I/O.
+- **EXP_MISO**: joins the base MISO through 330 Ω, so a stuck expansion line cannot override a base device.
+- **CS_A–CS_D**: active low, driven by the decoder, idle high. In the schematic they are EXP_CS_A_N to EXP_CS_D_N, and FAULT# is FAULT_N.
 - **OUT_EN**: output of the heartbeat watchdog. High means the CPU is alive. Every module with outputs must turn them off when OUT_EN is low.
 - **FAULT#**: open-drain, wired-OR across modules, feeds the base IO_FAULT.
 
@@ -42,7 +43,8 @@ For remote I/O at a distance, use the RS-485 port (Modbus RTU) instead.
 
 - Three ISO7741 instead of two: 9 channels CPU → field (7 used), 3 channels field → CPU (2 used).
 - IO_A2 on stacking connector pin 18.
-- One bus buffer for EXP_SCK / EXP_MOSI, one fuse, the 2×7 header.
+- One bus buffer for EXP_SCK / EXP_MOSI, series resistors, one fuse, the 2×7 header.
+- FAULT# is inverted on the field side before the isolator, so IO_FAULT is active high.
 
 ## Open
 
