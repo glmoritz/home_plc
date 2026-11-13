@@ -1,0 +1,12 @@
+# KiCad
+*.kicad_prl
+*-backups/
+*.lck
+~*.lck
+_autosave-*
+*.bak
+fp-info-cache
+\#auto_saved_files#
+# outputs
+*/gerbers/
+*/production/
