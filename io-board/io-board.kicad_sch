@@ -99,6 +99,96 @@
 			)
 		)
 	)
+	(sheet
+		(at 127 38.1)
+		(size 40.64 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "af82c6af-e7fd-5f04-aae0-7f4700bf2de5")
+		(property "Sheetname" "Digital inputs"
+			(at 127 37.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "digital_in.kicad_sch"
+			(at 127 59 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "io-board"
+				(path "/043b44e4-a81e-567f-8e7b-e33f7a8d3b8c"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 177.8 38.1)
+		(size 40.64 20.32)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "f8d17698-31d1-5a70-9306-a1f18932ea5d")
+		(property "Sheetname" "Digital outputs and watchdog"
+			(at 177.8 37.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "digital_out.kicad_sch"
+			(at 177.8 59 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "io-board"
+				(path "/043b44e4-a81e-567f-8e7b-e33f7a8d3b8c"
+					(page "5")
+				)
+			)
+		)
+	)
 	(sheet_instances
 		(path "/"
 			(page "1")

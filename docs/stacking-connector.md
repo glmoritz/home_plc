@@ -31,7 +31,8 @@ Direction is seen from the CPU board.
 - **+5V_ISO**: output of the isolated 24 V → 5 V module on the I/O board (6 W). Powers the CPU modules. Each CPU board must stop USB 5 V and +5V_ISO from back-feeding each other.
 - **IO_A0, IO_A1, IO_A2**: chip-select address for the field-side 74HC138. Addresses 0–3 are on the I/O board (DI, DO latch, ADC, DAC); addresses 4–7 go to the expansion connector, see [expansion-bus.md](expansion-bus.md).
 - **IO_CS_N**: chip-select strobe, active low. It enables the decoder, which then asserts the chip select chosen by IO_A0–A2. Pulled up on the I/O board, so with no CPU board fitted nothing is selected. The outputs themselves are gated by the heartbeat watchdog, not by this pin.
-- **IO_HEARTBEAT**: square wave from the CPU. If it stops, the 555 missing-pulse timer on the field side turns all digital outputs off and releases the heater contactor.
+- **IO_HEARTBEAT**: square wave from the CPU, 1 kHz nominal, at least 100 Hz. The field-side 555 watchdog reacts only to edges, so a line stuck high or low times out after about 0.1 s. All digital outputs then turn off, which also releases the heater contactor, and OUT_EN on the expansion bus goes low.
+- **Start-up order**: the output latch powers up with unknown contents and is only disabled, not cleared, by the watchdog. Firmware must write the outputs before it starts the heartbeat.
 - **IO_FAULT**: active high. High means a field-side fault or the field side has no power (the isolator's default output is high).
 - **RS485_TX / RX / DE**: logic side of the isolated RS-485 transceiver.
 - **IO_SPARE1**: spare isolator channel CPU → field. Its field-side output is not connected in this revision.
@@ -40,5 +41,4 @@ Direction is seen from the CPU board.
 
 ## Open
 
-- Heartbeat frequency and timeout.
 - Whether +5V_ISO needs a third pin once the P4 + C6 consumption is measured.

@@ -6,7 +6,7 @@ A small 24 V PLC in the Siemens S7-1200 style: an I/O board at the bottom and a 
 
 | Folder | Board | Contents |
 |---|---|---|
-| `io-board/` | IO-24 | 24 V field side: 8 DI, 4 DO, 2 × 4–20 mA in, 1 × 4–20 mA out, isolated RS-485, output watchdog, expansion connector, and the whole isolation barrier |
+| `io-board/` | IO-24 | 24 V field side: 8 DI, 4 DO (own 24 V load supply terminals), 2 × 4–20 mA in, 1 × 4–20 mA out, isolated RS-485, output watchdog, expansion connector, and the whole isolation barrier |
 | `cpu-c6/` | CPU-C6 | ESP32-C6-DevKitC-1 socket, RTC, RUN/ERR LEDs and RUN/STOP switch on an I2C expander |
 | `cpu-p4/` | CPU-P4 | Waveshare ESP32-P4-ETH-M socket, ESP32-C6-DevKitC-1 socket (Wi-Fi coprocessor), RTC, optional GPS breakout header (UART + PPS), RUN/ERR LEDs and RUN/STOP switch on an I2C expander |
 

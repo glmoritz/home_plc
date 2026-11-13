@@ -43,7 +43,37 @@ lib.add_custom("home_plc:URB2405YMD-6WR3", box_symbol(
     datasheet="https://kyohritsu.com/eclib/OTHER/CATALOG/MORNSUN/urbymd6wr3.pdf",
     description="Isolated DC-DC, 9-36 V in, 5 V 1.2 A out, 6 W, 1500 VDC isolation, 1 x 1 inch DIP"))
 
-CUSTOM = ["home_plc:ISO7741DW", "home_plc:TPS560430XDBV", "home_plc:URB2405YMD-6WR3"]
+lib.add_custom("home_plc:MAX22190ATJ", box_symbol(
+    "MAX22190ATJ", "U",
+    [("1", "IN1", "input"), ("3", "IN2", "input"), ("5", "IN3", "input"), ("7", "IN4", "input"),
+     ("18", "IN5", "input"), ("20", "IN6", "input"), ("22", "IN7", "input"), ("24", "IN8", "input"), None,
+     ("2", "LED1", "output"), ("4", "LED2", "output"), ("6", "LED3", "output"), ("8", "LED4", "output"),
+     ("17", "LED5", "output"), ("19", "LED6", "output"), ("21", "LED7", "output"), ("23", "LED8", "output")],
+    [("30", "VDD24", "power_in"), ("31", "VDD", "power_out"), ("16", "VL", "power_in"), None,
+     ("10", "SCLK", "input"), ("11", "SDI", "input"), ("13", "SDO", "tri_state"), ("9", "~{CS}", "input"),
+     ("12", "LATCH", "input"), ("14", "~{FAULT}", "open_collector"), ("15", "~{READY}", "open_collector"),
+     ("28", "M0", "input"), ("29", "M1", "input"), ("27", "REFDI", "passive"), ("26", "REFWB", "passive"),
+     ("25", "GND", "power_in"), ("32", "GND", "power_in"), ("33", "GND", "power_in")],
+    footprint="Package_DFN_QFN:TQFN-32-1EP_5x5mm_P0.5mm_EP3.1x3.1mm",
+    datasheet="https://www.analog.com/media/en/technical-documentation/data-sheets/MAX22190.pdf",
+    description="Octal 24 V digital input, IEC 61131-2 Type 1/3, SPI, TQFN-32. Pin 33 is the exposed pad"))
+
+lib.add_custom("home_plc:IPS4140HQ", box_symbol(
+    "IPS4140HQ", "U",
+    [("49", "VCC", "power_in"), None, ("13", "IN1", "input"), ("15", "IN2", "input"), ("19", "IN3", "input"),
+     ("21", "IN4", "input"), None, ("14", "~{STAT1}", "open_collector"), ("16", "~{STAT2}", "open_collector"),
+     ("18", "~{STAT3}", "open_collector"), ("20", "~{STAT4}", "open_collector"), None, ("17", "GND", "power_in")],
+    [("45", "OUT1", "output"), ("46", "OUT1", "passive"), ("47", "OUT1", "passive"),
+     ("42", "OUT2", "output"), ("43", "OUT2", "passive"), ("44", "OUT2", "passive"),
+     ("39", "OUT3", "output"), ("40", "OUT3", "passive"), ("41", "OUT3", "passive"),
+     ("36", "OUT4", "output"), ("37", "OUT4", "passive"), ("38", "OUT4", "passive")],
+    footprint="",
+    datasheet="https://www.st.com/resource/en/datasheet/ips4140hq.pdf",
+    description="Quad 24 V high-side switch, 0.6 A per channel, QFN48L 8x6. Pin 49 is the tab (VCC). "
+                "Pins 1-12, 22-35 and 48 are not connected and not drawn"))
+
+CUSTOM = ["home_plc:ISO7741DW", "home_plc:TPS560430XDBV", "home_plc:URB2405YMD-6WR3",
+          "home_plc:MAX22190ATJ", "home_plc:IPS4140HQ"]
 
 prj = Project("io-board", lib, POWER_NETS)
 
@@ -175,6 +205,105 @@ s.part("Connector_Generic:Conn_02x07_Odd_Even", "J", (360.68, Y1), {
     "7": "EXP_MOSI", "8": "EXP_MISO", "9": "EXP_CS_A_N", "10": "EXP_CS_B_N", "11": "EXP_CS_C_N",
     "12": "EXP_CS_D_N", "13": "OUT_EN", "14": "FAULT_N"},
     value="EXPANSION 2x7", footprint="Connector_IDC:IDC-Header_2x07_P2.54mm_Vertical")
+
+SMB = "Diode_SMD:D_SMB_Handsoldering"
+
+
+def tvs(sheet, at, net, gnd="GND_F"):
+    return two_pin(sheet, "Device:D_TVS", "D", at, gnd, net, "SMBJ33CA", SMB, r=90)
+
+
+def led(sheet, at, anode, cathode="GND_F", value="green"):
+    return two_pin(sheet, "Device:LED", "D", at, cathode, anode, value, LED0805, r=90)
+
+
+# ---------------------------------------------------------- digital inputs
+s = prj.sheet("digital_in.kicad_sch", "Digital inputs")
+YA, YB, YC, YD = 48.26, 99.06, 172.72, 248.92
+s.text("8 x 24 V inputs, sinking, IEC 61131-2 Type 1/3. 1M is the input common (GND_F).", (25.4, YA - 25.4))
+s.part("Connector_Generic:Conn_01x09", "J", (40.64, YA + 25.4),
+       dict({str(i): "DI%d" % i for i in range(1, 9)}, **{"9": "GND_F"}),
+       value="DI1-8, 1M", footprint="")
+for i in range(1, 9):
+    x = 73.66 + (i - 1) * 22.86
+    two_pin(s, "Device:R", "R", (x, YA), "DI%d" % i, "DI_IN%d" % i, "1k5 MELF", "Resistor_SMD:R_MiniMELF_MMA-0204")
+    tvs(s, (x, YB), "DI%d" % i)
+    led(s, (200.66 + (i - 1) * 15.24, YC), "DI_LED%d" % i)
+s.text("Input state LEDs, driven by the MAX22190 from the input current", (198.12, YC - 25.4))
+nets = {"VDD24": "+24V_F", "VDD": "DI_VDD", "VL": "+3V3_F", "SCLK": "F_SCK", "SDI": "F_MOSI", "SDO": "F_MISO",
+        "~{CS}": "CS_DI_N", "LATCH": "+3V3_F", "~{FAULT}": "FAULT_N", "~{READY}": "NC",
+        "M0": "GND_F", "M1": "GND_F", "REFDI": "DI_REFDI", "REFWB": "DI_REFWB", "GND": "GND_F"}
+for i in range(1, 9):
+    nets["IN%d" % i] = "DI_IN%d" % i
+    nets["LED%d" % i] = "DI_LED%d" % i
+s.part("home_plc:MAX22190ATJ", "U", (93.98, YC), nets)
+s.text("M1:M0 = 00: 24-bit SPI frames with CRC. LATCH tied high: inputs latch on CS.", (25.4, YC + 35.56))
+R(s, (33.02, YD), "7k5 1%", "DI_REFDI", "GND_F")
+R(s, (48.26, YD), "24k 1%", "DI_REFWB", "GND_F")
+C(s, (63.5, YD), "1u 50V", "+24V_F", "GND_F", C1206)
+C(s, (78.74, YD), "100n 50V", "+24V_F", "GND_F")
+C(s, (93.98, YD), "1u", "DI_VDD", "GND_F")
+C(s, (109.22, YD), "100n", "DI_VDD", "GND_F")
+C(s, (124.46, YD), "100n", "+3V3_F", "GND_F")
+
+# --------------------------------------------------------- digital outputs
+s = prj.sheet("digital_out.kicad_sch", "Digital outputs and watchdog")
+s.text("Output latch. Outputs are high-Z until the watchdog sees the heartbeat (OUT_EN high).", (25.4, Y1 - 30.48))
+s.part("74xx:74HC595", "U", (55.88, Y1), {
+    "SER": "F_MOSI", "SRCLK": "F_SCK", "RCLK": "CS_DO_N", "~{SRCLR}": "+3V3_F", "~{OE}": "DO_OE_N",
+    "QA": "DO_Q1", "QB": "DO_Q2", "QC": "DO_Q3", "QD": "DO_Q4", "QE": "NC", "QF": "NC", "QG": "NC", "QH": "NC",
+    "QH'": "NC", "VCC": "+3V3_F", "GND": "GND_F"},
+    value="74HC595", footprint="Package_SO:SOIC-16_3.9x9.9mm_P1.27mm")
+C(s, (91.44, Y1), "100n", "+3V3_F", "GND_F")
+s.part("74xGxx:74LVC1G04", "U", (129.54, Y1), {"1": "NC", "2": "OUT_EN", "4": "DO_OE_N", "GND": "GND_F", "VCC": "+3V3_F"},
+       value="74LVC1G04", footprint="Package_TO_SOT_SMD:SOT-23-5")
+C(s, (160.02, Y1), "100n", "+3V3_F", "GND_F")
+for i in range(1, 5):
+    x = 185.42 + (i - 1) * 30.48
+    R(s, (x, Y1), "1k", "DO_Q%d" % i, "DO_LED%d" % i)
+    led(s, (x + 12.7, Y1), "DO_LED%d" % i, value="yellow")
+    R(s, (231.14 + (i - 1) * 15.24, Y3), "47k", "DO_Q%d" % i, "GND_F")
+
+s.text("Heartbeat watchdog. Only edges on F_HEARTBEAT retrigger it, so a line stuck high or low times out "
+       "(about 0.1 s) and OUT_EN goes low.", (25.4, Y2 - 30.48))
+C(s, (33.02, Y2), "10n", "F_HEARTBEAT", "WD_TRIG")
+R(s, (48.26, Y2), "10k", "+3V3_F", "WD_TRIG")
+two_pin(s, "Device:D_Schottky", "D", (63.5, Y2), "+3V3_F", "WD_TRIG", "BAT54", "Diode_SMD:D_SOD-123", r=90)
+R(s, (81.28, Y2), "4k7", "WD_TRIG", "WD_BASE")
+s.part("Transistor_BJT:MMBT3906", "Q", (101.6, Y2), {"B": "WD_BASE", "E": "WD_CAP", "C": "GND_F"})
+R(s, (121.92, Y2), "1M", "+3V3_F", "WD_CAP")
+C(s, (137.16, Y2), "100n", "WD_CAP", "GND_F")
+s.part("Timer:TLC555xD", "U", (172.72, Y2), {
+    "TRIG": "WD_TRIG", "THRES": "WD_CAP", "DISCH": "WD_CAP", "~{RST}": "+3V3_F", "CONT": "WD_CV",
+    "OUT": "OUT_EN", "VCC": "+3V3_F", "GND": "GND_F"})
+C(s, (208.28, Y2), "10n", "WD_CV", "GND_F")
+C(s, (223.52, Y2), "100n", "+3V3_F", "GND_F")
+R(s, (243.84, Y2), "1k", "OUT_EN", "WD_LED")
+led(s, (259.08, Y2), "WD_LED", value="green OUT EN")
+
+s.text("Output driver and terminals. 2L+ is the load supply, 2M its return (GND_F).", (25.4, Y3 - 35.56))
+s.part("Connector_Generic:Conn_01x06", "J", (38.1, Y3),
+       {"1": "DO1", "2": "DO2", "3": "DO3", "4": "DO4", "5": "24V_DO_IN", "6": "GND_F"},
+       value="DO1-4, 2L+, 2M", footprint="")
+s.part("Transistor_FET:Q_PMOS_GDS", "Q", (66.04, Y3), {"G": "DO_RP_GATE", "D": "24V_DO_IN", "S": "+24V_DO"},
+       value="PMOS 60V TBD", footprint="Package_TO_SOT_SMD:TO-252-2")
+two_pin(s, "Device:D_Zener", "D", (88.9, Y3), "+24V_DO", "DO_RP_GATE", "15V", "Diode_SMD:D_SOD-123", r=90)
+R(s, (106.68, Y3), "100k", "DO_RP_GATE", "GND_F")
+tvs(s, (121.92, Y3), "+24V_DO")
+two_pin(s, "Device:C_Polarized", "C", (139.7, Y3), "+24V_DO", "GND_F", "47u 50V",
+        "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm")
+C(s, (154.94, Y3), "100n 50V", "+24V_DO", "GND_F")
+nets = {"VCC": "+24V_DO", "GND": "GND_F"}
+for i in range(1, 5):
+    nets["IN%d" % i] = "DO_Q%d" % i
+    nets["~{STAT%d}" % i] = "FAULT_N"
+    nets["OUT%d" % i] = "DO%d" % i
+    x = 297.18 + (i - 1) * 27.94
+    tvs(s, (x, Y3), "DO%d" % i)
+    C(s, (x + 15.24, Y3), "10n 50V", "DO%d" % i, "GND_F")
+s.part("home_plc:IPS4140HQ", "U", (193.04, Y3 + 5.08), nets)
+s.flag("+24V_DO", (66.04, Y3 + 30.48))
+s.flag("24V_DO_IN", (38.1, Y3 + 30.48))
 
 out = os.path.join(ROOT, "io-board")
 prj.write(out, "home_plc IO-24", "0.1")
