@@ -24,7 +24,7 @@ Direction is seen from the CPU board.
 | 13 | IO_FAULT | in | 14 | GND | – |
 | 15 | RS485_TX | out | 16 | RS485_RX | in |
 | 17 | RS485_DE | out | 18 | IO_A2 | out |
-| 19 | IO_SPARE1 | out | 20 | IO_SPARE2 | in |
+| 19 | IO_FAST1 | in | 20 | IO_FAST2 | in |
 
 ## Signal notes
 
@@ -35,9 +35,9 @@ Direction is seen from the CPU board.
 - **Start-up order**: the output latch powers up with unknown contents and is only disabled, not cleared, by the watchdog. Firmware must write the outputs before it starts the heartbeat.
 - **IO_FAULT**: active high. High means a field-side fault or the field side has no power (the isolator's default output is high).
 - **RS485_TX / RX / DE**: logic side of the isolated RS-485 transceiver.
-- **IO_SPARE1**: spare isolator channel CPU → field. Its field-side output is not connected in this revision.
-- **IO_SPARE2**: spare isolator channel field → CPU. Its field-side input is pulled low, so it reads low.
-- One more CPU → field isolator channel is unused and not on the connector.
+- **IO_FAST1, IO_FAST2**: DI1 and DI2 seen through an ISO1212, push-pull, high when the input is on. No SPI and no filter in the path (about 0.15 µs delay, input RC about 1 µs), so the CPU can count them with its PCNT peripheral (counters, A/B encoder) or take a GPIO interrupt. The same inputs still reach the MAX22190 as normal filtered inputs.
+- Only the CPU-P4 uses IO_FAST1/2. The CPU-C6 has no free GPIO and leaves pins 19 and 20 unconnected.
+- Two CPU → field isolator channels and one field → CPU channel on the third ISO7741 are unused and not on the connector.
 
 ## Open
 

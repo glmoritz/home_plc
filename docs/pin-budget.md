@@ -12,6 +12,7 @@ Sources:
 | Group | Signals | Count |
 |---|---|---:|
 | Stacking connector | IO_SCK, IO_MOSI, IO_MISO, IO_A0, IO_A1, IO_A2, IO_CS_N, IO_HEARTBEAT, IO_FAULT, RS485_TX, RS485_RX, RS485_DE | 12 |
+| Fast inputs (CPU-P4 only) | IO_FAST1, IO_FAST2, to PCNT-capable GPIOs | 2 |
 | I2C | SDA, SCL: RTC and front-panel expander | 2 |
 | GPS (CPU-P4 only) | GPS_TX, GPS_RX, GPS_PPS | 3 |
 | Wi-Fi coprocessor link (CPU-P4 only) | SDIO CLK, CMD, D0–D3, C6 reset | 7 |
@@ -27,9 +28,11 @@ The 2×20 header exposes 27 GPIOs. The USB-C port goes to a CH343 UART bridge on
 | SDIO to the C6 | 14 (D0), 15 (D1), 16 (D2), 17 (D3), 18 (CLK), 19 (CMD), 54 (C6 reset) | 7 |
 | I2C | 7 (SDA), 8 (SCL); shared with the module's ES8311 codec at 0x18 | 2 |
 | Stacking connector + GPS | 15 from the pool: 2, 3, 4, 5, 6, 20, 21, 22, 23, 26, 27, 32, 33, 46, 47, 48 | 15 |
-| Spare | 1 left in the pool, plus 24 and 25 | 3 |
+| Fast inputs | the last pool GPIO, plus one freed GPIO (see below) | 2 |
+| Spare | 24 and 25 | 2 |
 
 - Keep GPIO24/25 free: they are the P4's USB serial/JTAG pins, useful for debugging.
+- **Open**: the fast inputs need one GPIO more than the pool has. Proposal: drive the C6 reset from the I2C expander and use GPIO54 for IO_FAST2. Check that ESP-Hosted accepts a reset it does not drive itself; if not, drop GPS_TX (the GPS module then runs on its defaults).
 - The SDIO pin set (14–19, 54) is the one I recall Espressif using for ESP-Hosted on its own P4 board. Confirm against the ESP-Hosted P4 defaults before layout.
 - C6 side of the SDIO link: GPIO18 (CMD), 19 (CLK), 20–23 (D0–D3), RST. Add pull-ups on CMD and D0–D3.
 
@@ -45,6 +48,7 @@ The two 1×16 headers expose 23 GPIOs.
 | Use | GPIOs | Count |
 |---|---|---:|
 | Stacking connector + I2C | all 14 of the pool: 0, 1, 2, 3, 6, 7, 10, 11, 18, 19, 20, 21, 22, 23 | 14 |
+| Fast inputs | not supported; stacking pins 19 and 20 stay unconnected | 0 |
 | Spare | none without using a strapping pin | 0 |
 | Avoid: strapping | 4, 5, 8, 9, 15 (8 also drives the on-board RGB LED) | 5 |
 | Avoid: USB | 12, 13 | 2 |

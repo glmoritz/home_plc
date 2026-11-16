@@ -72,8 +72,25 @@ lib.add_custom("home_plc:IPS4140HQ", box_symbol(
     description="Quad 24 V high-side switch, 0.6 A per channel, QFN48L 8x6. Pin 49 is the tab (VCC). "
                 "Pins 1-12, 22-35 and 48 are not connected and not drawn"))
 
+lib.add_custom("home_plc:ADS124S08IPBS", box_symbol(
+    "ADS124S08IPBS", "U",
+    [("7", "AIN0", "input"), ("6", "AIN1", "input"), ("5", "AIN2", "input"), ("4", "AIN3", "input"),
+     ("3", "AIN4", "input"), ("2", "AIN5", "input"), ("32", "REFP1/AIN6", "input"), ("31", "REFN1/AIN7", "input"),
+     ("22", "GPIO0/AIN8", "bidirectional"), ("21", "GPIO1/AIN9", "bidirectional"),
+     ("20", "GPIO2/AIN10", "bidirectional"), ("19", "GPIO3/AIN11", "bidirectional"), ("1", "AINCOM", "input"),
+     None, ("30", "REFP0", "input"), ("29", "REFN0", "input"), ("23", "REFOUT", "output"),
+     ("24", "REFCOM", "passive")],
+    [("26", "AVDD", "power_in"), ("16", "DVDD", "power_in"), ("15", "IOVDD", "power_in"), None,
+     ("9", "~{CS}", "input"), ("11", "SCLK", "input"), ("10", "DIN", "input"), ("12", "DOUT/~{DRDY}", "tri_state"),
+     ("13", "~{DRDY}", "output"), None, ("8", "START/SYNC", "input"), ("18", "~{RESET}", "input"),
+     ("17", "CLK", "input"), ("25", "NC", "passive"), None,
+     ("27", "AVSS", "power_in"), ("28", "AVSS-SW", "passive"), ("14", "DGND", "power_in")],
+    footprint="Package_QFP:TQFP-32_5x5mm_P0.5mm",
+    datasheet="https://www.ti.com/lit/ds/symlink/ads124s08.pdf",
+    description="24-bit delta-sigma ADC, 12 inputs, PGA 1-128, 2 IDACs, VBIAS, 2.5 V reference, SPI, TQFP-32"))
+
 CUSTOM = ["home_plc:ISO7741DW", "home_plc:TPS560430XDBV", "home_plc:URB2405YMD-6WR3",
-          "home_plc:MAX22190ATJ", "home_plc:IPS4140HQ"]
+          "home_plc:MAX22190ATJ", "home_plc:IPS4140HQ", "home_plc:ADS124S08IPBS"]
 
 prj = Project("io-board", lib, POWER_NETS)
 
@@ -150,11 +167,10 @@ s.part("Connector_Generic:Conn_02x10_Odd_Even", "J", (45.72, Y1), {
     "1": "+5V_ISO", "2": "+5V_ISO", "3": "GND_C", "4": "GND_C", "5": "IO_SCK", "6": "GND_C",
     "7": "IO_MOSI", "8": "IO_MISO", "9": "IO_A0", "10": "IO_A1", "11": "IO_CS_N", "12": "IO_HEARTBEAT",
     "13": "IO_FAULT", "14": "GND_C", "15": "RS485_TX", "16": "RS485_RX", "17": "RS485_DE", "18": "IO_A2",
-    "19": "IO_SPARE1", "20": "IO_SPARE2"},
+    "19": "IO_FAST1", "20": "IO_FAST2"},
     value="STACK 2x10", footprint="Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical")
 R(s, (30.48, Y2), "10k", "+3V3_C", "IO_CS_N")
 R(s, (45.72, Y2), "10k", "IO_HEARTBEAT", "GND_C")
-R(s, (60.96, Y2), "10k", "IO_SPARE1", "GND_C")
 
 s.text("Isolators: CPU side left, field side right", (93.98, Y1 - 27.94))
 ISO = "home_plc:ISO7741DW"
@@ -163,13 +179,12 @@ s.part(ISO, "U", (116.84, Y1), dict(common, INA="IO_SCK", OUTA="F_SCK", INB="IO_
                                     INC="IO_CS_N", OUTC="F_CS_N", IND="F_MISO", OUTD="IO_MISO"))
 s.part(ISO, "U", (116.84, Y2), dict(common, INA="IO_A0", OUTA="F_A0", INB="IO_A1", OUTB="F_A1",
                                     INC="IO_A2", OUTC="F_A2", IND="F_FAULT", OUTD="IO_FAULT"))
-s.part(ISO, "U", (116.84, Y3), dict(common, INA="IO_HEARTBEAT", OUTA="F_HEARTBEAT", INB="IO_SPARE1", OUTB="NC",
-                                    INC="GND_C", OUTC="NC", IND="F_SPARE_IN", OUTD="IO_SPARE2"))
+s.part(ISO, "U", (116.84, Y3), dict(common, INA="IO_HEARTBEAT", OUTA="F_HEARTBEAT", INB="GND_C", OUTB="NC",
+                                    INC="GND_C", OUTC="NC", IND="GND_F", OUTD="NC"))
 for y in (Y1, Y2, Y3):
     C(s, (152.4, y), "100n", "+3V3_C", "GND_C")
     C(s, (165.1, y), "100n", "+3V3_F", "GND_F")
 R(s, (177.8, Y1), "100k", "F_MISO", "GND_F")
-R(s, (177.8, Y3), "10k", "F_SPARE_IN", "GND_F")
 
 s.text("Chip-select decoder: 0-3 on this board, 4-7 to expansion", (198.12, Y1 - 27.94))
 s.part("74xx:74HC138", "U", (223.52, Y1), {
@@ -246,6 +261,23 @@ C(s, (93.98, YD), "1u", "DI_VDD", "GND_F")
 C(s, (109.22, YD), "100n", "DI_VDD", "GND_F")
 C(s, (124.46, YD), "100n", "+3V3_F", "GND_F")
 
+YF = YD - 35.56
+s.text("Fast inputs: DI1 and DI2 also drive an ISO1212 (IEC 61131-2 Type 3, 4 Mbps). Its outputs go straight "
+       "to the CPU as IO_FAST1/2", (149.86, YF - 33.02))
+s.text("for counters, encoders and interrupts. The terminal then draws about 4.6 mA. SUB1/SUB2: small floating "
+       "copper islands.", (149.86, YF - 27.94))
+iso_nets = {"VCC1": "+3V3_C", "EN": "+3V3_C", "GND1": "GND_C", "NC": "NC", "SUB1": "NC", "SUB2": "NC"}
+for k in (1, 2):
+    x = 154.94 + (k - 1) * 45.72
+    sense = "FI%d_SENSE" % k
+    two_pin(s, "Device:R", "R", (x, YF), "DI%d" % k, sense, "1k MELF", "Resistor_SMD:R_MiniMELF_MMA-0204")
+    C(s, (x + 15.24, YF), "1n 100V", sense, "GND_F")
+    R(s, (x + 30.48, YF), "562R 1%", sense, "FI%d_IN" % k)
+    iso_nets.update({"SENSE%d" % k: sense, "IN%d" % k: "FI%d_IN" % k, "FGND%d" % k: "GND_F",
+                     "OUT%d" % k: "IO_FAST%d" % k})
+s.part("Isolator:ISO1212", "U", (269.24, YF), iso_nets, footprint="Package_SO:SSOP-16_3.9x4.9mm_P0.635mm")
+C(s, (299.72, YF), "100n", "+3V3_C", "GND_C")
+
 # --------------------------------------------------------- digital outputs
 N_DO = 8
 s = prj.sheet("digital_out.kicad_sch", "Output latch and watchdog")
@@ -315,54 +347,107 @@ for chip, y in ((0, Y2), (1, Y3)):
 
 # ------------------------------------------------------------------ analog
 R1206 = "Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder"
+C0G = " C0G"
 s = prj.sheet("analog.kicad_sch", "Analog inputs and output")
-s.text("2 x 4-20 mA inputs: 100R shunt to GND_F, so 20 mA = 2.0 V at the ADC. "
-       "Terminals: AI1, M, AI2, M, AO, M.", (25.4, Y1 - 30.48))
-s.part("Connector_Generic:Conn_01x06", "J", (38.1, Y1),
-       {"1": "AI1", "2": "GND_F", "3": "AI2", "4": "GND_F", "5": "AO", "6": "GND_F"},
-       value="AI1, M, AI2, M, AO, M", footprint="")
-for n in (1, 2):
-    x = 66.04 + (n - 1) * 121.92
-    ai, sh, adc = "AI%d" % n, "AI%d_SH" % n, "ADC_CH%d" % n
-    two_pin(s, "Device:Polyfuse", "F", (x, Y1), ai, sh, "PTC 50mA", F1812)
-    two_pin(s, "Device:R", "R", (x + 15.24, Y1), sh, "GND_F", "100R 0.1%", R1206)
-    tvs(s, (x + 30.48, Y1), ai)
-    R(s, (x + 50.8, Y1), "4k7", sh, adc)
-    C(s, (x + 66.04, Y1), "100n", adc, "GND_F")
-    s.part("Diode:BAT54S", "D", (x + 88.9, Y1), {"A": "GND_F", "K": "+3V3_F", "COM": adc})
+YA, YB, YC, YD = 45.72, 96.52, 160.02, 233.68
 
-s.text("ADC, 2.5 V reference and DAC", (25.4, Y2 - 30.48))
-s.part("Analog_ADC:ADS1118IDGS", "U", (60.96, Y2), {
-    "SCLK": "F_SCK", "~{CS}": "CS_ADC_N", "DIN": "F_MOSI", "DOUT/~{DRDY}": "F_MISO",
-    "AIN0": "ADC_CH1", "AIN1": "ADC_CH2", "AIN2": "GND_F", "AIN3": "GND_F", "VDD": "+3V3_F", "GND": "GND_F"},
-    footprint="Package_SO:MSOP-10_3x3mm_P0.5mm")
-C(s, (99.06, Y2), "100n", "+3V3_F", "GND_F")
-R(s, (119.38, Y2), "680R", "+3V3_F", "VREF_2V5")
-s.part("Reference_Voltage:LM4040DBZ-2.5", "U", (142.24, Y2), {"K": "VREF_2V5", "A": "GND_F", "NC": "NC"})
-C(s, (165.1, Y2), "100n", "VREF_2V5", "GND_F")
-s.part("Analog_DAC:MCP4921-ESN", "U", (213.36, Y2), {
+s.text("2 universal inputs (4-20 mA, thermocouple, 2/3-wire Pt100/Pt1000). Terminals per channel: A, B, C. "
+       "C1 and C2 are one net. DIP switches 1+2 (AI1) and 3+4 (AI2) ON = 4-20 mA.", (25.4, YA - 25.4))
+s.text("4-20 mA: + to A, - to B (B is grounded by the switch). TC: + to A, - to B. "
+       "RTD 3-wire: single lead to A, the pair to B and C. RTD 2-wire: A and B, bridge B-C.", (25.4, YA - 20.32))
+s.part("Connector_Generic:Conn_01x06", "J", (30.48, (YA + YB) / 2),
+       {"1": "AI1_A", "2": "AI1_B", "3": "AI_C", "4": "AI2_A", "5": "AI2_B", "6": "AI_C"},
+       value="AI1 A B C, AI2 A B C", footprint="")
+sw = {}
+for n, y in ((1, YA), (2, YB)):
+    a, b = "AI%d_A" % n, "AI%d_B" % n
+    x = 55.88
+    tvs(s, (x, y), a)
+    tvs(s, (x + 15.24, y), b)
+    # 4-20 mA path: PTC and shunt, connected by the DIP switch
+    two_pin(s, "Device:Polyfuse", "F", (x + 30.48, y), a, "AI%d_PT" % n, "PTC 50mA", F1812)
+    two_pin(s, "Device:R", "R", (x + 45.72, y), "AI%d_SH" % n, "GND_F", "100R 0.1%", R1206)
+    # excitation lines: IDAC current only, outside the measurement
+    R(s, (x + 60.96, y), "4k99", a, "AI%d_AX" % n)
+    R(s, (x + 76.2, y), "4k99", b, "AI%d_BX" % n)
+    # sense lines: no current, so their resistors add no error
+    R(s, (x + 91.44, y), "10k", a, "AI%d_AS" % n)
+    R(s, (x + 106.68, y), "10k", b, "AI%d_BS" % n)
+    C(s, (x + 121.92, y), "1n" + C0G, "AI%d_AS" % n, "GND_F")
+    C(s, (x + 137.16, y), "1n" + C0G, "AI%d_BS" % n, "GND_F")
+    C(s, (x + 152.4, y), "10n" + C0G, "AI%d_AS" % n, "AI%d_BS" % n)
+    R(s, (x + 167.64, y), "10k", "AI%d_SH" % n, "AI%d_SS" % n)
+    C(s, (x + 182.88, y), "100n", "AI%d_SS" % n, "GND_F")
+    k = 2 * n - 1
+    sw[str(k)], sw[str(9 - k)] = "AI%d_PT" % n, "AI%d_SH" % n
+    sw[str(k + 1)], sw[str(8 - k)] = b, "GND_F"
+s.part("Switch:SW_DIP_x04", "SW", (276.86, YA), sw, value="4-20 mA select",
+       footprint="Button_Switch_SMD:SW_DIP_SPSTx04_Slide_6.7x11.72mm_W8.61mm_P2.54mm_LowProfile")
+
+s.text("RTD return and reference: both IDAC currents flow through RREF, so VREF = 2 x I x RREF (ratiometric). "
+       "The 1k in C limits a 24 V miswire.", (254.0, YB - 27.94))
+tvs(s, (259.08, YB), "AI_C")
+two_pin(s, "Device:R", "R", (274.32, YB), "AI_C", "RTD_REFP", "1k", R1206)
+two_pin(s, "Device:R", "R", (289.56, YB), "RTD_REFP", "GND_F", "1k62 0.1% 10ppm", R1206)
+C(s, (304.8, YB), "100n", "RTD_REFP", "GND_F")
+R(s, (320.04, YB), "10k", "RTD_REFP", "ADC_REFP0")
+C(s, (335.28, YB), "100n" + C0G, "ADC_REFP0", "GND_F")
+
+s.text("ADC. AVDD = 5 V for IDAC headroom; logic at 3.3 V. AIN1/AIN3 (B sense) can take VBIAS for thermocouples. "
+       "Firmware: REFP buffer on, PGA bypassed for 4-20 mA.", (25.4, YC - 33.02))
+s.part("home_plc:ADS124S08IPBS", "U", (76.2, YC), {
+    "AIN0": "AI1_AS", "AIN1": "AI1_BS", "AIN2": "AI2_AS", "AIN3": "AI2_BS", "AIN4": "AI1_SS", "AIN5": "AI2_SS",
+    "REFP1/AIN6": "CJC_NTC", "REFN1/AIN7": "V24_MON", "GPIO0/AIN8": "AI1_AX", "GPIO1/AIN9": "AI1_BX",
+    "GPIO2/AIN10": "AI2_AX", "GPIO3/AIN11": "AI2_BX", "AINCOM": "GND_F",
+    "REFP0": "ADC_REFP0", "REFN0": "GND_F", "REFOUT": "ADC_REFOUT", "REFCOM": "GND_F",
+    "AVDD": "ADC_AVDD", "DVDD": "+3V3_F", "IOVDD": "+3V3_F", "~{CS}": "CS_ADC_N", "SCLK": "F_SCK",
+    "DIN": "F_MOSI", "DOUT/~{DRDY}": "F_MISO", "~{DRDY}": "NC", "START/SYNC": "GND_F", "~{RESET}": "+3V3_F",
+    "CLK": "GND_F", "NC": "NC", "AVSS": "GND_F", "AVSS-SW": "GND_F", "DGND": "GND_F"})
+R(s, (124.46, YC), "10R", "+5V_F", "ADC_AVDD")
+s.flag("ADC_AVDD", (124.46, YC + 20.32))
+C(s, (139.7, YC), "10u", "ADC_AVDD", "GND_F", C1206)
+C(s, (154.94, YC), "100n", "ADC_AVDD", "GND_F")
+C(s, (170.18, YC), "100n", "+3V3_F", "GND_F")
+C(s, (185.42, YC), "1u", "ADC_REFOUT", "GND_F")
+s.text("Cold junction: NTC at the AI terminals, ratiometric to REFOUT", (195.58, YC - 25.4))
+two_pin(s, "Device:R", "R", (200.66, YC), "ADC_REFOUT", "CJC_NTC", "10k 0.1%", R0805)
+two_pin(s, "Device:Thermistor_NTC", "TH", (215.9, YC), "CJC_NTC", "GND_F", "NTC 10k 1% B3950",
+        "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder")
+C(s, (231.14, YC), "100n", "CJC_NTC", "GND_F")
+s.text("L+ monitor: 2.5 V full scale = 33 V", (241.3, YC - 30.48))
+R(s, (246.38, YC), "100k 1%", "+24V_F", "V24_MON")
+R(s, (261.62, YC), "8k2 1%", "V24_MON", "GND_F")
+C(s, (276.86, YC), "100n", "V24_MON", "GND_F")
+
+s.text("2.5 V reference and DAC", (292.1, YC - 25.4))
+R(s, (297.18, YC), "680R", "+3V3_F", "VREF_2V5")
+s.part("Reference_Voltage:LM4040DBZ-2.5", "U", (314.96, YC), {"K": "VREF_2V5", "A": "GND_F", "NC": "NC"})
+C(s, (340.36, YC), "100n", "VREF_2V5", "GND_F")
+s.part("Analog_DAC:MCP4921-ESN", "U", (370.84, YC), {
     "VDD": "+3V3_F", "~{CS}": "CS_DAC_N", "SCK": "F_SCK", "SDI": "F_MOSI", "~{LDAC}": "GND_F",
     "VrefA": "VREF_2V5", "AVSS": "GND_F", "VoutA": "DAC_OUT"},
     footprint="Package_SO:SOIC-8_3.9x4.9mm_P1.27mm")
-C(s, (251.46, Y2), "100n", "+3V3_F", "GND_F")
-R(s, (266.7, Y2), "1k", "DAC_OUT", "AO_VIN")
+C(s, (355.6, YC + 33.02), "100n", "+3V3_F", "GND_F")
+R(s, (391.16, YC + 33.02), "1k", "DAC_OUT", "AO_VIN")
 
 s.text("4-20 mA output: Iout = 10 x Vin / 1k, so 2.0 V = 20 mA. OD is high (output off) while the watchdog "
-       "has no heartbeat.", (25.4, Y3 - 30.48))
-R(s, (33.02, Y3), "10R", "+24V_F", "AO_VSP")
-C(s, (48.26, Y3), "100n 50V", "AO_VSP", "GND_F")
-s.flag("AO_VSP", (33.02, Y3 + 25.4))
-s.part("Interface_CurrentLoop:XTR111AxDGQ", "U", (93.98, Y3), {
+       "has no heartbeat. Terminals: AO, M.", (25.4, YD - 33.02))
+s.part("Connector_Generic:Conn_01x02", "J", (276.86, YD), {"1": "AO", "2": "GND_F"},
+       value="AO, M", footprint="")
+R(s, (33.02, YD), "10R", "+24V_F", "AO_VSP")
+C(s, (48.26, YD), "100n 50V", "AO_VSP", "GND_F")
+s.flag("AO_VSP", (33.02, YD + 25.4))
+s.part("Interface_CurrentLoop:XTR111AxDGQ", "U", (93.98, YD), {
     "VSP": "AO_VSP", "IS": "AO_IS", "VG": "AO_VG", "REGS": "AO_REG", "REGF": "AO_REG", "VIN": "AO_VIN",
     "SET": "AO_SET", "~{EF}": "NC", "OD": "DO_OE_N", "GND": "GND_F"},
     value="XTR111AIDGQ")
-C(s, (132.08, Y3), "470n", "AO_REG", "GND_F")
-two_pin(s, "Device:R", "R", (147.32, Y3), "AO_SET", "GND_F", "1k 0.1%", R0805)
-s.part("Transistor_FET:Q_PMOS_GDS", "Q", (175.26, Y3), {"G": "AO_VG", "S": "AO_IS", "D": "AO_DRAIN"},
+C(s, (132.08, YD), "470n", "AO_REG", "GND_F")
+two_pin(s, "Device:R", "R", (147.32, YD), "AO_SET", "GND_F", "1k 0.1%", R0805)
+s.part("Transistor_FET:Q_PMOS_GDS", "Q", (175.26, YD), {"G": "AO_VG", "S": "AO_IS", "D": "AO_DRAIN"},
        value="PMOS 60V TBD", footprint="Package_TO_SOT_SMD:SOT-223-3_TabPin2")
-two_pin(s, "Device:D_Schottky", "D", (203.2, Y3), "AO", "AO_DRAIN", "SS16", "Diode_SMD:D_SMA_Handsoldering", r=90)
-tvs(s, (223.52, Y3), "AO")
-C(s, (243.84, Y3), "10n 50V", "AO", "GND_F")
+two_pin(s, "Device:D_Schottky", "D", (203.2, YD), "AO", "AO_DRAIN", "SS16", "Diode_SMD:D_SMA_Handsoldering", r=90)
+tvs(s, (223.52, YD), "AO")
+C(s, (243.84, YD), "10n 50V", "AO", "GND_F")
 
 out = os.path.join(ROOT, "io-board")
 prj.write(out, "home_plc IO-24", "0.1")
